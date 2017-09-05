@@ -3,26 +3,26 @@
 
 # # Import packages and load data
 
-# In[1]:
+# In[10]:
 
 import pandas as pd
 
 
-# In[2]:
+# In[11]:
 
 train = pd.read_csv('train.csv')
 
 
 # ## Summarize the continuous variables
 
-# In[3]:
+# In[12]:
 
 train.describe()
 
 
 # ## Examine the first few rows of data
 
-# In[4]:
+# In[13]:
 
 train.head()
 
@@ -30,7 +30,7 @@ train.head()
 # ## Check for missing values
 # Age will have to be imputed.  Cabin should probably be dropped since so many values are missing.  Rows missing embarked can be dropped since it is only 2 rows.
 
-# In[5]:
+# In[14]:
 
 train.isnull().sum()
 
@@ -38,7 +38,7 @@ train.isnull().sum()
 # ## Impute Age using median
 # We could do something fancier using median by group or doing some predictive modeling to fill in the missing age values.
 
-# In[6]:
+# In[15]:
 
 train['ImputedAge'] = train['Age'].fillna(train['Age'].median())
 train.head()
@@ -48,7 +48,7 @@ train.isnull().sum()
 # ## Extract Titles
 # The Name column is probably useless on it's own but the title associated with each name could be useful.
 
-# In[7]:
+# In[16]:
 
 def get_title(name):
     if '.' in name:
@@ -63,11 +63,79 @@ train.head()
 # ## Drop Age and Cabin
 # Then check to make sure all remaining data is complete.
 
-# In[8]:
+# In[17]:
 
 train.drop(['Age', 'Cabin'], axis = 1, inplace = True)
 train.dropna(inplace = True)
 train.isnull().sum()
+
+
+# ## Visualize data
+
+# ### Compare continous variables
+
+# In[19]:
+
+import seaborn as sns
+from matplotlib import pyplot as plt
+continuous = ['ImputedAge', 'SibSp', 'Parch', 'Fare']
+categorical = ['Survived', 'Pclass', 'Sex', 'Embarked', 'Title']
+g = sns.PairGrid(train[continuous])
+g.map(plt.scatter)
+plt.show()
+
+
+# ### Boxplots of continous versus categorical
+# Age has only slight correlation with survival.  Very large families are unlikely to survive.  High fare and high Pclass are correlated with survival.  Sex is correlated with survival.  Some titles are correlated with survival.  Let's consider all of these variables as candidates for inclusion in the models.
+
+# In[21]:
+
+sns.boxplot('Survived', 'ImputedAge', data = train)
+plt.show()
+
+
+# In[22]:
+
+sns.boxplot('Survived', 'SibSp', data = train)
+plt.show()
+
+
+# In[23]:
+
+sns.boxplot('Survived', 'Parch', data = train)
+plt.show()
+
+
+# In[25]:
+
+sns.boxplot('Survived', 'Fare', data = train)
+plt.show()
+
+
+# ### Compare categorical variables
+
+# In[27]:
+
+sns.barplot('Pclass', 'Survived', data = train)
+plt.show()
+
+
+# In[28]:
+
+sns.barplot('Sex', 'Survived', data = train)
+plt.show()
+
+
+# In[29]:
+
+sns.barplot('Embarked', 'Survived', data = train)
+plt.show()
+
+
+# In[30]:
+
+sns.barplot('Title', 'Survived', data = train)
+plt.show()
 
 
 # ## Set up data for fitting
