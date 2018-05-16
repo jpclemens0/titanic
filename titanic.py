@@ -1,12 +1,28 @@
-
-# coding: utf-8
-
-# # Import packages and load data
-
-# In[10]:
-
+"""This script analyzes the titanic dataset."""
 import pandas as pd
-
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import classification_report
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import roc_curve, auc
+from scipy import interp
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.dummy import DummyClassifier
 
 # In[11]:
 
@@ -28,7 +44,8 @@ train.head()
 
 
 # ## Check for missing values
-# Age will have to be imputed.  Cabin should probably be dropped since so many values are missing.  Rows missing embarked can be dropped since it is only 2 rows.
+# Age will have to be imputed.  Cabin should probably be dropped since so many values are missing.
+# Rows missing embarked can be dropped since it is only 2 rows.
 
 # In[14]:
 
@@ -36,7 +53,8 @@ train.isnull().sum()
 
 
 # ## Impute Age using median
-# We could do something fancier using median by group or doing some predictive modeling to fill in the missing age values.
+# We could do something fancier using median by group or doing some predictive modeling
+# to fill in the missing age values.
 
 # In[15]:
 
@@ -46,7 +64,8 @@ train.isnull().sum()
 
 
 # ## Extract Titles
-# The Name column is probably useless on it's own but the title associated with each name could be useful.
+# The Name column is probably useless on it's own but the title associated with each name
+#  could be useful.
 
 # In[16]:
 
@@ -55,8 +74,8 @@ def get_title(name):
         return name.split(',')[1].split('.')[0].strip()
     else:
         return 'Unknown'
-    
-train['Title'] = train['Name'].map(lambda x: get_title(x))
+
+train['Title'] = train['Name'].map(get_title)
 train.head()
 
 
@@ -65,8 +84,8 @@ train.head()
 
 # In[17]:
 
-train.drop(['Age', 'Cabin'], axis = 1, inplace = True)
-train.dropna(inplace = True)
+train.drop(['Age', 'Cabin'], axis=1, inplace=True)
+train.dropna(inplace=True)
 train.isnull().sum()
 
 
@@ -76,8 +95,6 @@ train.isnull().sum()
 
 # In[19]:
 
-import seaborn as sns
-from matplotlib import pyplot as plt
 continuous = ['ImputedAge', 'SibSp', 'Parch', 'Fare']
 categorical = ['Survived', 'Pclass', 'Sex', 'Embarked', 'Title']
 g = sns.PairGrid(train[continuous])
@@ -86,29 +103,32 @@ plt.show()
 
 
 # ### Boxplots of continous versus categorical
-# Age has only slight correlation with survival.  Very large families are unlikely to survive.  High fare and high Pclass are correlated with survival.  Sex is correlated with survival.  Some titles are correlated with survival.  Let's consider all of these variables as candidates for inclusion in the models.
+# Age has only slight correlation with survival.  Very large families are unlikely to survive.
+# High fare and high Pclass are correlated with survival.  Sex is correlated with survival.
+# Some titles are correlated with survival.  Let's consider all of these variables as candidates
+# for inclusion in the models.
 
 # In[21]:
 
-sns.boxplot('Survived', 'ImputedAge', data = train)
+sns.boxplot('Survived', 'ImputedAge', data=train)
 plt.show()
 
 
 # In[22]:
 
-sns.boxplot('Survived', 'SibSp', data = train)
+sns.boxplot('Survived', 'SibSp', data=train)
 plt.show()
 
 
 # In[23]:
 
-sns.boxplot('Survived', 'Parch', data = train)
+sns.boxplot('Survived', 'Parch', data=train)
 plt.show()
 
 
 # In[25]:
 
-sns.boxplot('Survived', 'Fare', data = train)
+sns.boxplot('Survived', 'Fare', data=train)
 plt.show()
 
 
@@ -116,34 +136,34 @@ plt.show()
 
 # In[27]:
 
-sns.barplot('Pclass', 'Survived', data = train)
+sns.barplot('Pclass', 'Survived', data=train)
 plt.show()
 
 
 # In[28]:
 
-sns.barplot('Sex', 'Survived', data = train)
+sns.barplot('Sex', 'Survived', data=train)
 plt.show()
 
 
 # In[29]:
 
-sns.barplot('Embarked', 'Survived', data = train)
+sns.barplot('Embarked', 'Survived', data=train)
 plt.show()
 
 
 # In[30]:
 
-sns.barplot('Title', 'Survived', data = train)
+sns.barplot('Title', 'Survived', data=train)
 plt.show()
 
 
 # ## Set up data for fitting
-# Choose which variables to keep, encode categorical variables, and split into a training set and a test set.
+# Choose which variables to keep, encode categorical variables, and split into a training set
+# and a test set.
 
 # In[9]:
 
-from sklearn.model_selection import train_test_split
 y = train['Survived']
 #keep = ['Sex', 'Pclass', 'Title', 'ImputedAge', 'SibSp', 'Parch', 'Fare']
 keep = ['Sex', 'Pclass', 'Title', 'ImputedAge', 'SibSp', 'Parch', 'Fare', 'Embarked']
@@ -157,8 +177,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random
 
 # In[10]:
 
-from sklearn.linear_model import LogisticRegression
-import sklearn.preprocessing
 model = LogisticRegression()
 model.fit(X_train, y_train)
 model.score(X_test, y_test)
@@ -168,32 +186,37 @@ model.score(X_test, y_test)
 
 # In[11]:
 
-from sklearn.model_selection import cross_val_score
-import numpy as np
-scores = cross_val_score(model, X, y, cv = 5)
+scores = cross_val_score(model, X, y, cv=5)
 print(scores)
 print(np.mean(scores))
 
 
 # ## Select hyperparameters by cross validation
-# Choose the level of regularization of the logistic regression by doing a grid search over a set of possible values.
+# Choose the level of regularization of the logistic regression by doing a grid search over
+# a set of possible values.
 # 
-# There are multiple ways to quantify the performance of a classification algorithm.  The Kaggle competition for the Titanic dataset uses the prediction accuracy, but it is interesting to consider other metrics.  We consider five different performance metrics:
+# There are multiple ways to quantify the performance of a classification algorithm.
+# The Kaggle competition for the Titanic dataset uses the prediction accuracy, but it is
+# interesting to consider other metrics.  We consider five different performance metrics:
 # 
-# 1. Precision: Correctly identified survivors/total identified survivors.  This is a measure of the quality of the positive results.
-# 2. Recall: Correctly identified survivors/total survivors.  This is a measure of the quantity of the positive results.
+# 1. Precision: Correctly identified survivors/total identified survivors.  This is a measure of
+# the quality of the positive results.
+# 2. Recall: Correctly identified survivors/total survivors.  This is a measure of the quantity of
+# the positive results.
 # 3. Accuracy: Fraction of cases correctly identified, whether survivor or not.
 # 4. F1: The F-score is the harmonic mean of precision and recall.
 # 5. AUC: This is the area under the ROC curve.
 # 
-# ROC is the receiver operating characteristic.  The logistic regression produces a probability of survivorship for each person in the dataset.  What probability threshold should we use to predict survivorship?  0.5 may seem logical, but we could use other choices.  The ROC is the relationship between the true positive rate and the false positive rate as the threshold is varied.  The AUC is the area under this curve.
+# ROC is the receiver operating characteristic.  The logistic regression produces a probability of
+# survivorship for each person in the dataset.  What probability threshold should we use to predict
+# survivorship?  0.5 may seem logical, but we could use other choices.  The ROC is the relationship
+# between the true positive rate and the false positive rate as the threshold is varied.  The AUC
+# is the area under this curve.
 # 
-# The code block below chooses the best hyperparameters to maximize each of the five metrics in turn.
+# The code block below chooses the best hyperparameters to maximize each of the
+# five metrics in turn.
 
 # In[12]:
-
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import classification_report
 
 
 # Set the parameters by cross-validation
@@ -244,12 +267,6 @@ clf.best_params_
 
 # In[14]:
 
-from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import roc_curve, auc
-from scipy import interp
-import matplotlib.pyplot as plt
-from itertools import cycle
-import numpy as np
 cv = StratifiedKFold(n_splits=6)
 classifier = LogisticRegression(**clf.best_params_)
 X = X.as_matrix()
@@ -303,17 +320,17 @@ plt.show()
 
 # In[15]:
 
-from sklearn.svm import SVC
 def run_steps(X, y, model_f, tuned_parameters):
     model = model_f()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
     model.fit(X_train, y_train)
     print("Score on test using default settings: ", model.score(X_test, y_test))
-    scores = cross_val_score(model, X, y, cv = 5)
+    scores = cross_val_score(model, X, y, cv=5)
     print("Scores for 5 fold CV: ", scores)
     print("Mean score for 5 fold CV: ", np.mean(scores))
-    
-    #tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+
+    #tuned_parameters = [{'penalty': ['l1', 'l2'],
+    # 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 
     scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
     #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
@@ -322,8 +339,7 @@ def run_steps(X, y, model_f, tuned_parameters):
         print("# Tuning hyper-parameters for %s" % score)
         print()
 
-        clf = GridSearchCV(model, tuned_parameters, cv=5,
-                       scoring=score)
+        clf = GridSearchCV(model, tuned_parameters, cv=5, scoring=score)
         clf.fit(X_train, y_train)
 
         print("Best parameters set found on development set:")
@@ -335,8 +351,7 @@ def run_steps(X, y, model_f, tuned_parameters):
         means = clf.cv_results_['mean_test_score']
         stds = clf.cv_results_['std_test_score']
         for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-            print("%0.3f (+/-%0.03f) for %r"
-              % (mean, std * 2, params))
+            print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
         print()
 
         print("Detailed classification report:")
@@ -347,12 +362,12 @@ def run_steps(X, y, model_f, tuned_parameters):
         y_true, y_pred = y_test, clf.predict(X_test)
         print(classification_report(y_true, y_pred))
         print()
-        
+
     print("Best settings for ", scores[-1], ":", clf.best_params_)
-    
+
     cv = StratifiedKFold(n_splits=6)
     if (model_f == SVC):
-        classifier = model_f(probability = True, **clf.best_params_)
+        classifier = model_f(probability=True, **clf.best_params_)
     else:
         classifier = model_f(**clf.best_params_)
     #X = X.as_matrix()
@@ -372,26 +387,23 @@ def run_steps(X, y, model_f, tuned_parameters):
         tprs[-1][0] = 0.0
         roc_auc = auc(fpr, tpr)
         aucs.append(roc_auc)
-        plt.plot(fpr, tpr, lw=1, alpha=0.3,
-             label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+        plt.plot(fpr, tpr, lw=1, alpha=0.3, label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
 
         i += 1
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-         label='Luck', alpha=.8)
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Luck', alpha=.8)
 
     mean_tpr = np.mean(tprs, axis=0)
     mean_tpr[-1] = 1.0
     mean_auc = auc(mean_fpr, mean_tpr)
     std_auc = np.std(aucs)
-    plt.plot(mean_fpr, mean_tpr, color='b',
-         label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-         lw=2, alpha=.8)
+    plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
+                                                  % (mean_auc, std_auc), lw=2, alpha=.8)
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
     tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
     plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                 label=r'$\pm$ 1 std. dev.')
+                     label=r'$\pm$ 1 std. dev.')
 
     plt.xlim([-0.05, 1.05])
     plt.ylim([-0.05, 1.05])
@@ -407,7 +419,8 @@ def run_steps(X, y, model_f, tuned_parameters):
 # In[16]:
 
 model = LogisticRegression
-tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+tuned_parameters = [{'penalty': ['l1', 'l2'],
+                     'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 run_steps(X, y, model, tuned_parameters)
 
 
@@ -415,9 +428,9 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[21]:
 
-from sklearn.neighbors import KNeighborsClassifier
 model = KNeighborsClassifier
-tuned_parameters = [{'n_neighbors': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 'metric': ['euclidean', 'manhattan', 'chebyshev']}]
+tuned_parameters = [{'n_neighbors': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                     'metric': ['euclidean', 'manhattan', 'chebyshev']}]
 run_steps(X, y, model, tuned_parameters)
 
 
@@ -425,7 +438,6 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[22]:
 
-from sklearn.svm import SVC
 model = SVC
 tuned_parameters = [{'kernel': ['linear'], 'C': [0.03, 0.1, 0.3, 1]}]
 run_steps(X, y, model, tuned_parameters)
@@ -435,7 +447,6 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[23]:
 
-from sklearn.gaussian_process import GaussianProcessClassifier
 model = GaussianProcessClassifier
 tuned_parameters = [{'n_restarts_optimizer': [1, 2, 3]}]
 run_steps(X, y, model, tuned_parameters)
@@ -445,10 +456,9 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[24]:
 
-from sklearn.tree import DecisionTreeClassifier
 model = DecisionTreeClassifier
-tuned_parameters = [{'criterion': ['gini', 'entropy'], 
-                     'splitter': ['best', 'random'], 
+tuned_parameters = [{'criterion': ['gini', 'entropy'],
+                     'splitter': ['best', 'random'],
                      'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}]
 run_steps(X, y, model, tuned_parameters)
 
@@ -457,10 +467,9 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[25]:
 
-from sklearn.ensemble import RandomForestClassifier
 model = RandomForestClassifier
 tuned_parameters = [{'n_estimators': [10, 20, 30],
-                     'criterion': ['gini', 'entropy'], 
+                     'criterion': ['gini', 'entropy'],
                      'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]}]
 run_steps(X, y, model, tuned_parameters)
 
@@ -469,10 +478,9 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[26]:
 
-from sklearn.ensemble import ExtraTreesClassifier
 model = ExtraTreesClassifier
 tuned_parameters = [{'n_estimators': [10, 20, 30],
-                     'criterion': ['gini', 'entropy'], 
+                     'criterion': ['gini', 'entropy'],
                      'max_depth': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]}]
 run_steps(X, y, model, tuned_parameters)
 
@@ -481,12 +489,11 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[27]:
 
-from sklearn.neural_network import MLPClassifier
 model = MLPClassifier
-tuned_parameters = [{'hidden_layer_sizes': [(10,), (100,), (10,10), (100,100)],
-                     'activation': ['identity', 'logistic', 'tanh', 'relu'], 
-                     'alpha': [1e-3, 1e-4, 1e-5], 
-                    'solver': ['lbfgs']}]
+tuned_parameters = [{'hidden_layer_sizes': [(10,), (100,), (10, 10), (100, 100)],
+                     'activation': ['identity', 'logistic', 'tanh', 'relu'],
+                     'alpha': [1e-3, 1e-4, 1e-5],
+                     'solver': ['lbfgs']}]
 run_steps(X, y, model, tuned_parameters)
 
 
@@ -494,7 +501,6 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[31]:
 
-from sklearn.ensemble import AdaBoostClassifier
 model = AdaBoostClassifier
 tuned_parameters = [{'n_estimators': [10, 20, 30, 40, 50, 60, 70, 100],
                      'learning_rate': [0.01, 0.1, 1, 10]}]
@@ -506,17 +512,17 @@ run_steps(X, y, model, tuned_parameters)
 
 # In[35]:
 
-from sklearn.naive_bayes import GaussianNB
 model = GaussianNB()
 #model = model_f()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 model.fit(X_train, y_train)
 print("Score on test using default settings: ", model.score(X_test, y_test))
-scores = cross_val_score(model, X, y, cv = 5)
+scores = cross_val_score(model, X, y, cv=5)
 print("Scores for 5 fold CV: ", scores)
 print("Mean score for 5 fold CV: ", np.mean(scores))
 
-#tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+#tuned_parameters = [{'penalty': ['l1', 'l2'],
+# 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
@@ -537,7 +543,7 @@ for score in scores:
     print()
     print("Grid scores on development set:")
     print()
-    res = cross_val_score(model, X, y, cv = 5, scoring = score)
+    res = cross_val_score(model, X, y, cv=5, scoring=score)
     means = np.mean(res)
     stds = np.std(res)
     #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
@@ -579,26 +585,23 @@ for train, test in cv.split(X, y):
     tprs[-1][0] = 0.0
     roc_auc = auc(fpr, tpr)
     aucs.append(roc_auc)
-    plt.plot(fpr, tpr, lw=1, alpha=0.3,
-         label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+    plt.plot(fpr, tpr, lw=1, alpha=0.3, label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
 
     i += 1
-plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-     label='Luck', alpha=.8)
+plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Luck', alpha=.8)
 
 mean_tpr = np.mean(tprs, axis=0)
 mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
-plt.plot(mean_fpr, mean_tpr, color='b',
-     label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-     lw=2, alpha=.8)
+plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
+                                              % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
 tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
 plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-             label=r'$\pm$ 1 std. dev.')
+                 label=r'$\pm$ 1 std. dev.')
 
 plt.xlim([-0.05, 1.05])
 plt.ylim([-0.05, 1.05])
@@ -614,17 +617,17 @@ plt.show()
 
 # In[37]:
 
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 model = LinearDiscriminantAnalysis()
 #model = model_f()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 model.fit(X_train, y_train)
 print("Score on test using default settings: ", model.score(X_test, y_test))
-scores = cross_val_score(model, X, y, cv = 5)
+scores = cross_val_score(model, X, y, cv=5)
 print("Scores for 5 fold CV: ", scores)
 print("Mean score for 5 fold CV: ", np.mean(scores))
 
-#tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+#tuned_parameters = [{'penalty': ['l1', 'l2'],
+# 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
@@ -645,7 +648,7 @@ for score in scores:
     print()
     print("Grid scores on development set:")
     print()
-    res = cross_val_score(model, X, y, cv = 5, scoring = score)
+    res = cross_val_score(model, X, y, cv=5, scoring=score)
     means = np.mean(res)
     stds = np.std(res)
     #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
@@ -687,26 +690,23 @@ for train, test in cv.split(X, y):
     tprs[-1][0] = 0.0
     roc_auc = auc(fpr, tpr)
     aucs.append(roc_auc)
-    plt.plot(fpr, tpr, lw=1, alpha=0.3,
-         label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+    plt.plot(fpr, tpr, lw=1, alpha=0.3, label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
 
     i += 1
-plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-     label='Luck', alpha=.8)
+plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Luck', alpha=.8)
 
 mean_tpr = np.mean(tprs, axis=0)
 mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
-plt.plot(mean_fpr, mean_tpr, color='b',
-     label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-     lw=2, alpha=.8)
+plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
+                                              % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
 tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
 plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-             label=r'$\pm$ 1 std. dev.')
+                 label=r'$\pm$ 1 std. dev.')
 
 plt.xlim([-0.05, 1.05])
 plt.ylim([-0.05, 1.05])
@@ -722,17 +722,17 @@ plt.show()
 
 # In[36]:
 
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 model = QuadraticDiscriminantAnalysis()
 #model = model_f()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 model.fit(X_train, y_train)
 print("Score on test using default settings: ", model.score(X_test, y_test))
-scores = cross_val_score(model, X, y, cv = 5)
+scores = cross_val_score(model, X, y, cv=5)
 print("Scores for 5 fold CV: ", scores)
 print("Mean score for 5 fold CV: ", np.mean(scores))
 
-#tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+#tuned_parameters = [{'penalty': ['l1', 'l2'],
+# 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
@@ -753,7 +753,7 @@ for score in scores:
     print()
     print("Grid scores on development set:")
     print()
-    res = cross_val_score(model, X, y, cv = 5, scoring = score)
+    res = cross_val_score(model, X, y, cv=5, scoring=score)
     means = np.mean(res)
     stds = np.std(res)
     #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
@@ -795,26 +795,23 @@ for train, test in cv.split(X, y):
     tprs[-1][0] = 0.0
     roc_auc = auc(fpr, tpr)
     aucs.append(roc_auc)
-    plt.plot(fpr, tpr, lw=1, alpha=0.3,
-         label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+    plt.plot(fpr, tpr, lw=1, alpha=0.3, label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
 
     i += 1
-plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-     label='Luck', alpha=.8)
+plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r', label='Luck', alpha=.8)
 
 mean_tpr = np.mean(tprs, axis=0)
 mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
-plt.plot(mean_fpr, mean_tpr, color='b',
-     label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-     lw=2, alpha=.8)
+plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
+                                              % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
 tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
 plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-             label=r'$\pm$ 1 std. dev.')
+                 label=r'$\pm$ 1 std. dev.')
 
 plt.xlim([-0.05, 1.05])
 plt.ylim([-0.05, 1.05])
@@ -829,7 +826,6 @@ plt.show()
 
 # In[38]:
 
-from sklearn.dummy import DummyClassifier
 model = DummyClassifier
 tuned_parameters = [{'strategy': ['stratified', 'most_frequent', 'prior', 'uniform']}]
 run_steps(X, y, model, tuned_parameters)
@@ -845,9 +841,3 @@ test = pd.read_csv('test.csv')
 X = test[keep]
 X = pd.get_dummies(X)
 model.predict(X)
-
-
-# In[ ]:
-
-
-
