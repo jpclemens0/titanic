@@ -1,6 +1,9 @@
 """This script analyzes the titanic dataset."""
 import pandas as pd
 import seaborn as sns
+from scipy import interp
+import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
@@ -8,9 +11,6 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import roc_curve, auc
-from scipy import interp
-import matplotlib.pyplot as plt
-import numpy as np
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -194,11 +194,11 @@ print(np.mean(scores))
 # ## Select hyperparameters by cross validation
 # Choose the level of regularization of the logistic regression by doing a grid search over
 # a set of possible values.
-# 
+#
 # There are multiple ways to quantify the performance of a classification algorithm.
 # The Kaggle competition for the Titanic dataset uses the prediction accuracy, but it is
 # interesting to consider other metrics.  We consider five different performance metrics:
-# 
+#
 # 1. Precision: Correctly identified survivors/total identified survivors.  This is a measure of
 # the quality of the positive results.
 # 2. Recall: Correctly identified survivors/total survivors.  This is a measure of the quantity of
@@ -206,13 +206,13 @@ print(np.mean(scores))
 # 3. Accuracy: Fraction of cases correctly identified, whether survivor or not.
 # 4. F1: The F-score is the harmonic mean of precision and recall.
 # 5. AUC: This is the area under the ROC curve.
-# 
+#
 # ROC is the receiver operating characteristic.  The logistic regression produces a probability of
 # survivorship for each person in the dataset.  What probability threshold should we use to predict
 # survivorship?  0.5 may seem logical, but we could use other choices.  The ROC is the relationship
 # between the true positive rate and the false positive rate as the threshold is varied.  The AUC
 # is the area under this curve.
-# 
+#
 # The code block below chooses the best hyperparameters to maximize each of the
 # five metrics in turn.
 
@@ -220,7 +220,8 @@ print(np.mean(scores))
 
 
 # Set the parameters by cross-validation
-tuned_parameters = [{'penalty': ['l1', 'l2'], 'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
+tuned_parameters = [{'penalty': ['l1', 'l2'],
+                     'C': [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]}]
 
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 
@@ -259,11 +260,12 @@ for score in scores:
 
 # In[13]:
 
-clf.best_params_
+print(clf.best_params_)
 
 
 # ## Plot ROC
-# Using the choice of hyperparameters that optimize the AUC we plot the ROC for using cross validation.
+# Using the choice of hyperparameters that optimize the AUC we plot the ROC
+# for using cross validation.
 
 # In[14]:
 
@@ -321,6 +323,7 @@ plt.show()
 # In[15]:
 
 def run_steps(X, y, model_f, tuned_parameters):
+    """Build a model and run a classification report."""
     model = model_f()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
     model.fit(X_train, y_train)
@@ -382,7 +385,7 @@ def run_steps(X, y, model_f, tuned_parameters):
         #print(X[train])
         probas_ = classifier.fit(X[train], y[train]).predict_proba(X[test])
         # Compute ROC curve and area the curve
-        fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
+        fpr, tpr, _ = roc_curve(y[test], probas_[:, 1])
         tprs.append(interp(mean_fpr, fpr, tpr))
         tprs[-1][0] = 0.0
         roc_auc = auc(fpr, tpr)
@@ -397,7 +400,7 @@ def run_steps(X, y, model_f, tuned_parameters):
     mean_auc = auc(mean_fpr, mean_tpr)
     std_auc = np.std(aucs)
     plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
-                                                  % (mean_auc, std_auc), lw=2, alpha=.8)
+             % (mean_auc, std_auc), lw=2, alpha=.8)
 
     std_tpr = np.std(tprs, axis=0)
     tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -527,38 +530,6 @@ print("Mean score for 5 fold CV: ", np.mean(scores))
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
 
-for score in scores:
-    print("# Tuning hyper-parameters for %s" % score)
-    print()
-
-    #clf = GridSearchCV(model, tuned_parameters, cv=5,
-                   #scoring=score)
-    #clf.fit(X_train, y_train)
-
-
-
-    print("Best parameters set found on development set:")
-    print()
-    #print(clf.best_params_)
-    print()
-    print("Grid scores on development set:")
-    print()
-    res = cross_val_score(model, X, y, cv=5, scoring=score)
-    means = np.mean(res)
-    stds = np.std(res)
-    #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-    print("%0.3f (+/-%0.03f)"
-          % (mean, std * 2))
-    print()
-
-    print("Detailed classification report:")
-    print()
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
-    print()
-    y_true, y_pred = y_test, model.predict(X_test)
-    print(classification_report(y_true, y_pred))
-    print()
 
 #print("Best settings for ", scores[-1], ":", clf.best_params_)
 
@@ -595,7 +566,7 @@ mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
 plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
-                                              % (mean_auc, std_auc), lw=2, alpha=.8)
+         % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -632,38 +603,6 @@ print("Mean score for 5 fold CV: ", np.mean(scores))
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
 
-for score in scores:
-    print("# Tuning hyper-parameters for %s" % score)
-    print()
-
-    #clf = GridSearchCV(model, tuned_parameters, cv=5,
-                   #scoring=score)
-    #clf.fit(X_train, y_train)
-
-
-
-    print("Best parameters set found on development set:")
-    print()
-    #print(clf.best_params_)
-    print()
-    print("Grid scores on development set:")
-    print()
-    res = cross_val_score(model, X, y, cv=5, scoring=score)
-    means = np.mean(res)
-    stds = np.std(res)
-    #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-    print("%0.3f (+/-%0.03f)"
-          % (mean, std * 2))
-    print()
-
-    print("Detailed classification report:")
-    print()
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
-    print()
-    y_true, y_pred = y_test, model.predict(X_test)
-    print(classification_report(y_true, y_pred))
-    print()
 
 #print("Best settings for ", scores[-1], ":", clf.best_params_)
 
@@ -700,7 +639,7 @@ mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
 plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
-                                              % (mean_auc, std_auc), lw=2, alpha=.8)
+         % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -737,38 +676,6 @@ print("Mean score for 5 fold CV: ", np.mean(scores))
 scores = ['precision', 'recall', 'accuracy', 'f1', 'roc_auc']
 #scores = ['recall', 'accuracy', 'f1', 'roc_auc']
 
-for score in scores:
-    print("# Tuning hyper-parameters for %s" % score)
-    print()
-
-    #clf = GridSearchCV(model, tuned_parameters, cv=5,
-                   #scoring=score)
-    #clf.fit(X_train, y_train)
-
-
-
-    print("Best parameters set found on development set:")
-    print()
-    #print(clf.best_params_)
-    print()
-    print("Grid scores on development set:")
-    print()
-    res = cross_val_score(model, X, y, cv=5, scoring=score)
-    means = np.mean(res)
-    stds = np.std(res)
-    #for mean, std, params in zip(means, stds, clf.cv_results_['params']):
-    print("%0.3f (+/-%0.03f)"
-          % (mean, std * 2))
-    print()
-
-    print("Detailed classification report:")
-    print()
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
-    print()
-    y_true, y_pred = y_test, model.predict(X_test)
-    print(classification_report(y_true, y_pred))
-    print()
 
 #print("Best settings for ", scores[-1], ":", clf.best_params_)
 
@@ -805,7 +712,7 @@ mean_tpr[-1] = 1.0
 mean_auc = auc(mean_fpr, mean_tpr)
 std_auc = np.std(aucs)
 plt.plot(mean_fpr, mean_tpr, color='b', label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)'
-                                              % (mean_auc, std_auc), lw=2, alpha=.8)
+         % (mean_auc, std_auc), lw=2, alpha=.8)
 
 std_tpr = np.std(tprs, axis=0)
 tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
@@ -835,9 +742,3 @@ run_steps(X, y, model, tuned_parameters)
 
 test = pd.read_csv('test.csv')
 
-
-# In[669]:
-
-X = test[keep]
-X = pd.get_dummies(X)
-model.predict(X)
