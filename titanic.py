@@ -352,7 +352,7 @@ def run_steps(X, y, model_f, tuned_parameters):
     
     cv = StratifiedKFold(n_splits=6)
     if (model_f == SVC):
-        classifier = model_f(**clf.best_params_, probability = True)
+        classifier = model_f(probability = True, **clf.best_params_)
     else:
         classifier = model_f(**clf.best_params_)
     #X = X.as_matrix()
